@@ -271,9 +271,9 @@ GO
 SET QUOTED_IDENTIFIER ON;
 GO
 CREATE PROCEDURE [dbo].[RegisterUser]
-    @Username NVARCHAR(256),
-    @Password NVARCHAR(512),
-    @Email NVARCHAR(512),
+    @Username TEXT,
+    @Password TEXT,
+    @Email TEXT,
     @AccountCreated DATETIME2(7) = NULL
 AS
 BEGIN
@@ -300,8 +300,8 @@ GO
 SET QUOTED_IDENTIFIER ON;
 GO
 CREATE PROCEDURE [dbo].[AuthenticateUser]
-    @Username NVARCHAR(256),
-    @Password NVARCHAR(512)
+    @Username TEXT,
+    @Password TEXT
 AS
 BEGIN
     SET NOCOUNT ON;
