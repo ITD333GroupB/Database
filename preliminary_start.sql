@@ -75,6 +75,8 @@ CREATE TABLE [dbo].[Users](
     [ID]        INT IDENTITY(1,1) NOT NULL,
     [Username]  TEXT NOT NULL,
     [Password]  TEXT NOT NULL,
+    [Email]     TEXT NOT NULL,
+    [AccountCreated] DATETIME2(7) NOT NULL,
     CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED ([ID] ASC)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
 GO
@@ -134,6 +136,32 @@ GO
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Returns relationships between users and workspaces.', @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'UserWorkspaces';
 GO
 
+CREATE TABLE [dbo].[Messages](
+    [ID]             INT IDENTITY(1,1) NOT NULL,
+    [Message]        TEXT NOT NULL,
+    [AuthorUserId]   INT NOT NULL,
+    [AuthorUsername] TEXT NOT NULL,
+    [CreatedAt]      DATETIME2(7) NOT NULL,
+    [Type]           INT NOT NULL,
+    [OwnerId]        INT NOT NULL,
+    CONSTRAINT [PK_Messages] PRIMARY KEY CLUSTERED ([ID] ASC)
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Stores task comments and workspace chat messages.', @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'Messages';
+GO
+
+CREATE TABLE [dbo].[ChildTasks](
+    [ID]            INT IDENTITY(1,1) NOT NULL,
+    [Name]          TEXT NOT NULL,
+    [Contents]      TEXT NOT NULL,
+    [TaskStatus]    INT NOT NULL,
+    [ParentTaskID]  INT NOT NULL,
+    CONSTRAINT [PK_ChildTasks] PRIMARY KEY CLUSTERED ([ID] ASC)
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Stores child tasks that belong to parent tasks.', @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'ChildTasks';
+GO
+
 -------- setup foreign keys ------
 ALTER TABLE [dbo].[Groups] WITH CHECK
     ADD CONSTRAINT [OwnerID_FK] FOREIGN KEY ([OwnerID]) REFERENCES [dbo].[Users]([ID]);
@@ -180,7 +208,63 @@ ALTER TABLE [dbo].[UserWorkspaces] WITH CHECK
 ALTER TABLE [dbo].[UserWorkspaces] CHECK CONSTRAINT [UserWorkspaces_WorkspaceID];
 GO
 
+ALTER TABLE [dbo].[Messages] WITH CHECK
+    ADD CONSTRAINT [Messages_AuthorUserID] FOREIGN KEY ([AuthorUserId]) REFERENCES [dbo].[Users]([ID]);
+ALTER TABLE [dbo].[Messages] CHECK CONSTRAINT [Messages_AuthorUserID];
+GO
+
+ALTER TABLE [dbo].[ChildTasks] WITH CHECK
+    ADD CONSTRAINT [ChildTasks_ParentTaskID] FOREIGN KEY ([ParentTaskID]) REFERENCES [dbo].[Tasks]([TaskID]);
+ALTER TABLE [dbo].[ChildTasks] CHECK CONSTRAINT [ChildTasks_ParentTaskID];
+GO
+
 ---- setup stored procedures -----
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE PROCEDURE [dbo].[GetMessagesByOwnerAndType]
+        @OwnerId INT,
+        @Type INT
+AS
+BEGIN
+        SET NOCOUNT ON;
+
+        SELECT [ID],
+                     [Message],
+                     [AuthorUserId],
+                     [AuthorUsername],
+                     [CreatedAt],
+                     [Type],
+                     [OwnerId]
+        FROM [dbo].[Messages]
+        WHERE [OwnerId] = @OwnerId
+            AND [Type] = @Type
+        ORDER BY [CreatedAt] DESC, [ID] DESC;
+END;
+GO
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE PROCEDURE [dbo].[GetChildTasksByTaskId]
+    @TaskId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT [ID],
+           [ParentTaskID],
+           [Name],
+           [Contents],
+           [TaskStatus]
+    FROM [dbo].[ChildTasks]
+    WHERE [ParentTaskID] = @TaskId
+    ORDER BY [ID] DESC;
+END;
+GO
 
 SET ANSI_NULLS ON;
 GO
