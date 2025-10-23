@@ -279,7 +279,11 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF EXISTS (SELECT 1 FROM [dbo].[Users] WHERE [Username] = @Username)
+    IF EXISTS (
+        SELECT 1
+        FROM [dbo].[Users]
+        WHERE CONVERT(VARCHAR(MAX), [Username]) = CONVERT(VARCHAR(MAX), @Username)
+    )
     BEGIN
         SELECT CAST(-1 AS INT) AS [Result], NULL AS [UserID];
         RETURN;
@@ -312,8 +316,8 @@ BEGIN
            [Email],
            [AccountCreated]
     FROM [dbo].[Users]
-    WHERE [Username] = @Username
-      AND [Password] = @Password;
+        WHERE CONVERT(VARCHAR(MAX), [Username]) = CONVERT(VARCHAR(MAX), @Username)
+            AND CONVERT(VARCHAR(MAX), [Password]) = CONVERT(VARCHAR(MAX), @Password);
 END;
 GO
 
