@@ -270,6 +270,57 @@ SET ANSI_NULLS ON;
 GO
 SET QUOTED_IDENTIFIER ON;
 GO
+CREATE PROCEDURE [dbo].[RegisterUser]
+    @Username NVARCHAR(256),
+    @Password NVARCHAR(512),
+    @Email NVARCHAR(512),
+    @AccountCreated DATETIME2(7) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM [dbo].[Users] WHERE [Username] = @Username)
+    BEGIN
+        SELECT CAST(-1 AS INT) AS [Result], NULL AS [UserID];
+        RETURN;
+    END;
+
+    IF @AccountCreated IS NULL
+        SET @AccountCreated = SYSUTCDATETIME();
+
+    INSERT INTO [dbo].[Users] ([Username], [Password], [Email], [AccountCreated])
+    VALUES (@Username, @Password, @Email, @AccountCreated);
+
+    SELECT CAST(1 AS INT) AS [Result], SCOPE_IDENTITY() AS [UserID];
+END;
+GO
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE PROCEDURE [dbo].[AuthenticateUser]
+    @Username NVARCHAR(256),
+    @Password NVARCHAR(512)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (1)
+           [ID],
+           [Username],
+           [Email],
+           [AccountCreated]
+    FROM [dbo].[Users]
+    WHERE [Username] = @Username
+      AND [Password] = @Password;
+END;
+GO
+
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
 CREATE PROCEDURE [dbo].[GetWorkspaceTasks]
     @WorkspaceID INT
 AS
